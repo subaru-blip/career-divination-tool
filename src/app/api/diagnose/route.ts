@@ -1,14 +1,23 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { DiagnoseRequestSchema } from '@/lib/validations/diagnose';
 import { calculateBigFive } from '@/lib/scoring/bigfive';
 import { calculateRIASEC } from '@/lib/scoring/riasec';
 import { calculateValues } from '@/lib/scoring/values';
 import { calculateFortune } from '@/lib/scoring/fortune';
 import { generateResult } from '@/lib/scoring/resultGenerator';
-import { sampleOccupations } from '@/data/sample-occupations';
+import { getOccupations } from '@/lib/cache/occupationCache';
 import { archetypes } from '@/data/archetypes';
+import { sanitizeBasicInfo, sanitizeText } from '@/lib/security/sanitize';
+import { checkRateLimit } from '@/lib/security/rateLimit';
+import type { BasicInfoFormValues } from '@/lib/validations/basicInfo';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // レート制限チェック
+  const rateLimitResponse = checkRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -27,17 +36,37 @@ export async function POST(request: Request) {
     );
   }
 
-  const { basicInfo, answers } = parsed.data;
+  // サニタイズ処理
+  const rawBasicInfo = parsed.data.basicInfo as unknown as BasicInfoFormValues;
+  const sanitizedBasicInfoRaw = sanitizeBasicInfo(rawBasicInfo);
+  // BasicInfo 型に合わせて gender の undefined を null に正規化
+  const sanitizedBasicInfo = {
+    ...sanitizedBasicInfoRaw,
+    gender: sanitizedBasicInfoRaw.gender ?? null,
+    industryExperience: sanitizedBasicInfoRaw.industryExperience ?? null,
+  } satisfies import('@/types/diagnosis').BasicInfo;
+
+  const sanitizedFreeTexts = parsed.data.freeTexts.map((ft) => ({
+    ...ft,
+    text: sanitizeText(ft.text, 500),
+  }));
+
+  const { answers } = parsed.data;
 
   try {
     const bigFive = calculateBigFive(answers);
     const riasec = calculateRIASEC(answers);
     const values = calculateValues(answers);
-    const fortune = calculateFortune(basicInfo.birthDate);
+    const fortune = calculateFortune(sanitizedBasicInfo.birthDate);
 
     const scores = { bigFive, riasec, values, fortune };
 
-    const result = generateResult(scores, basicInfo, sampleOccupations, archetypes);
+    // キャッシュから職業データを取得
+    const occupations = getOccupations();
+    const result = generateResult(scores, sanitizedBasicInfo, occupations, archetypes);
+
+    // freeTexts はログ等に使うが未使用変数警告を防ぐ
+    void sanitizedFreeTexts;
 
     return NextResponse.json({ result, scores });
   } catch (err) {

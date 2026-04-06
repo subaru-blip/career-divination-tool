@@ -1,7 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { buildSystemPrompt, type DiagnosisContext } from '@/lib/ai/systemPrompt';
 import { incrementTurnCount, isLimitReached, MAX_TURNS } from '@/lib/ai/sessionCounter';
+import { sanitizeText } from '@/lib/security/sanitize';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -19,7 +21,13 @@ interface ChatRequest {
   turnCount: number;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // IPベースのレート制限チェック（1分あたり20リクエスト）
+  const rateLimitResponse = checkRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let body: ChatRequest;
   try {
     body = await request.json() as ChatRequest;
@@ -49,9 +57,10 @@ export async function POST(request: Request) {
 
   const systemPrompt = buildSystemPrompt(context);
 
+  // ユーザーメッセージをサニタイズ（assistant メッセージは自前の出力なのでそのまま）
   const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => ({
     role: m.role,
-    content: m.content,
+    content: m.role === 'user' ? sanitizeText(m.content, 2000) : m.content,
   }));
 
   try {

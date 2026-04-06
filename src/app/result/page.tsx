@@ -113,7 +113,12 @@ export default function ResultPage() {
             </Link>
 
             <div className="flex justify-center">
-              <ShareButton />
+              <ShareButton
+                archetypeName={archetype.name}
+                archetypeId={archetype.id}
+                occupationName={result.idealPath.mainOccupation.name}
+                divineMessage={result.divineMessage}
+              />
             </div>
 
             <Link
