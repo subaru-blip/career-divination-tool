@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { DiagnosisProvider } from '@/store/diagnosisStore';
+import { Header } from '@/components/layout/Header';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -22,7 +23,10 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-full">
       <body className="min-h-full flex flex-col antialiased">
-        <DiagnosisProvider>{children}</DiagnosisProvider>
+        <DiagnosisProvider>
+          <Header />
+          {children}
+        </DiagnosisProvider>
       </body>
     </html>
   );

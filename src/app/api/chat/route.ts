@@ -22,7 +22,7 @@ interface ChatRequest {
 }
 
 export async function POST(request: NextRequest) {
-  // IPベースのレート制限チェック（1分あたり20リクエスト）
+  // IPベースのレート制限チェック
   const rateLimitResponse = checkRateLimit(request);
   if (rateLimitResponse) {
     return rateLimitResponse;
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'contextが不正です' }, { status: 400 });
   }
 
-  // サーバー側でも制限チェック（クライアントのturnCountを参照）
+  // セッション内ターン数チェック（お試し版: 10回/セッション）
   if (turnCount >= MAX_TURNS || isLimitReached(sessionId)) {
     return NextResponse.json(
       { error: '相談回数の上限（10回）に達しました。診断をやり直すと新たにご相談いただけます。' },
@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
 
   const systemPrompt = buildSystemPrompt(context);
 
-  // ユーザーメッセージをサニタイズ（assistant メッセージは自前の出力なのでそのまま）
   const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => ({
     role: m.role,
     content: m.role === 'user' ? sanitizeText(m.content, 2000) : m.content,
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const stream = await client.messages.stream({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system: systemPrompt,
       messages: anthropicMessages,

@@ -17,7 +17,7 @@ const STARS = Array.from({ length: 60 }, (_, i) => ({
 
 export default function HomePage() {
   return (
-    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-16 sm:px-6">
+    <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-4 py-16 sm:px-6">
       {/* 背景グラデーション */}
       <div
         aria-hidden
@@ -121,9 +121,13 @@ export default function HomePage() {
               <span aria-hidden>✧</span>
             </Button>
           </Link>
-          <p className="text-xs text-divine-300/40">
-            所要時間 約10〜15分 ・ 無料
-          </p>
+          <div className="flex items-center gap-4 text-xs text-divine-300/40">
+            <span>所要時間 約10〜15分 ・ 無料</span>
+            <span aria-hidden>·</span>
+            <Link href="/pricing" className="hover:text-divine-300/70 transition-colors underline underline-offset-2">
+              料金プランを見る
+            </Link>
+          </div>
         </motion.div>
       </motion.div>
 
