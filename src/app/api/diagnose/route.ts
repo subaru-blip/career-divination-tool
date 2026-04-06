@@ -210,6 +210,48 @@ ${result.realPath && result.realPath.mainOccupation.name !== result.idealPath.ma
       console.error('[/api/diagnose] LLM divine message failed, using template:', err);
     }
 
+    // ギャップ分析（現職と診断結果のギャップをAIが解説）
+    if (sanitizedBasicInfo.currentOccupation?.trim()) {
+      try {
+        const gapResponse = await anthropic.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 400,
+          messages: [{
+            role: 'user',
+            content: `あなたはキャリアカウンセラーです。以下のユーザーの「現在の仕事」と「性格診断の結果」のギャップを分析し、ユーザー自身が気づいていない可能性を説明してください。
+
+現在の職業: ${sanitizedBasicInfo.currentOccupation}
+診断で出た天職: ${result.idealPath.mainOccupation.name}
+${result.realPath ? `現実パス: ${result.realPath.mainOccupation.name}` : ''}
+
+性格スコア:
+- 開放性: ${scores.bigFive.openness}/100（好奇心・創造性）
+- 誠実性: ${scores.bigFive.conscientiousness}/100（自己管理・計画性）
+- 外向性: ${scores.bigFive.extraversion}/100（社交性）
+- 協調性: ${scores.bigFive.agreeableness}/100（思いやり）
+- 感受性: ${scores.bigFive.neuroticism}/100（繊細さ）
+
+RIASEC: R${scores.riasec.realistic} I${scores.riasec.investigative} A${scores.riasec.artistic} S${scores.riasec.social} E${scores.riasec.enterprising} C${scores.riasec.conventional}
+
+条件:
+- 200-300文字程度
+- 「なぜ今の仕事と違う結果が出たのか」を具体的に説明
+- ネガティブにせず「実はあなたにはこういう一面がある」というトーン
+- 今の仕事で活きている特性と、まだ使えていない特性を両方指摘
+- **太字**で強調ポイントを1-2箇所
+- 最後は「だからこそ〇〇に向いている」と診断結果につなげる`,
+          }],
+        });
+
+        const gapText = gapResponse.content[0];
+        if (gapText.type === 'text' && gapText.text.trim()) {
+          result.gapAnalysis = gapText.text;
+        }
+      } catch (err) {
+        console.error('[/api/diagnose] Gap analysis failed:', err);
+      }
+    }
+
     return NextResponse.json({ result, scores });
   } catch (err) {
     console.error('[/api/diagnose] Internal error:', err);

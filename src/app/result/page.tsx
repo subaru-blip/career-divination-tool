@@ -9,6 +9,8 @@ import { DivineMessage } from '@/components/result/DivineMessage';
 import { ArchetypeCard } from '@/components/result/ArchetypeCard';
 import { RealPathSection } from '@/components/result/RealPathSection';
 import { IdealPathSection } from '@/components/result/IdealPathSection';
+import { ScoreBreakdown } from '@/components/result/ScoreBreakdown';
+import { GapAnalysis } from '@/components/result/GapAnalysis';
 import { ShareButton } from '@/components/result/ShareButton';
 import { Button } from '@/components/ui/Button';
 import { staggerChildren } from '@/lib/animations';
@@ -18,6 +20,7 @@ export default function ResultPage() {
   const router = useRouter();
 
   const result = state.session?.result ?? null;
+  const scores = state.session?.scores ?? null;
   const archetype = result?.archetype;
 
   useEffect(() => {
@@ -81,6 +84,14 @@ export default function ResultPage() {
             <DivineMessage message={result.divineMessage} />
           </div>
 
+          {/* スコア（なぜこの結果なのかの根拠） */}
+          {scores && (
+            <ScoreBreakdown
+              bigFive={scores.bigFive}
+              riasec={scores.riasec}
+            />
+          )}
+
           {/* 理想パス（常に表示） */}
           <IdealPathSection
             path={result.idealPath}
@@ -109,6 +120,11 @@ export default function ResultPage() {
                 accentColor={archetype.colorPalette.secondary}
               />
             </>
+          )}
+
+          {/* ギャップ分析 */}
+          {result.gapAnalysis && (
+            <GapAnalysis analysis={result.gapAnalysis} />
           )}
 
           {/* CTA */}

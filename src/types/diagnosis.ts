@@ -76,8 +76,9 @@ export interface FortuneScores {
 export interface DiagnosisResult {
   archetype: Archetype;
   divineMessage: string;
-  realPath: CareerPath | null;  // 資格入力時のみ
+  realPath: CareerPath | null;
   idealPath: CareerPath;
+  gapAnalysis?: string; // 現職と診断結果のギャップ分析
 }
 
 export interface CareerPath {
