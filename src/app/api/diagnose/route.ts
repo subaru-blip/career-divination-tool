@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   const sanitizedBasicInfo = {
     ...sanitizedBasicInfoRaw,
     gender: sanitizedBasicInfoRaw.gender ?? null,
-    industryExperience: sanitizedBasicInfoRaw.industryExperience ?? null,
+    industryExperience: sanitizedBasicInfoRaw.industryExperience ?? [],
     constraints: sanitizedBasicInfoRaw.constraints ?? '',
   } satisfies import('@/types/diagnosis').BasicInfo;
 

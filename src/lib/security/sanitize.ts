@@ -81,12 +81,10 @@ export function sanitizeBasicInfo(info: BasicInfoFormValues): BasicInfoFormValue
     currentOccupation: sanitizeText(info.currentOccupation, 100),
     fieldOfStudy: sanitizeText(info.fieldOfStudy, 100),
     qualifications: info.qualifications.map((q) => sanitizeText(q, 100)),
-    industryExperience: info.industryExperience
-      ? {
-          ...info.industryExperience,
-          field: sanitizeText(info.industryExperience.field, 100),
-        }
-      : info.industryExperience,
+    industryExperience: (info.industryExperience ?? []).map((exp) => ({
+      ...exp,
+      field: sanitizeText(exp.field, 100),
+    })),
     constraints: sanitizeText(info.constraints ?? '', 800),
   };
 }

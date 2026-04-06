@@ -29,12 +29,14 @@ export const basicInfoSchema = z.object({
   fieldOfStudy: z.string().max(100),
 
   industryExperience: z
-    .object({
-      years: z.number().min(0).max(50),
-      field: z.string().max(100),
-    })
-    .nullable()
-    .optional(),
+    .array(
+      z.object({
+        years: z.number().min(0).max(50),
+        field: z.string().max(100),
+      })
+    )
+    .optional()
+    .default([]),
 
   constraints: z.string().max(800).optional().default(''),
 });

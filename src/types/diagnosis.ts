@@ -10,7 +10,7 @@ export interface BasicInfo {
   industryExperience: {
     years: number;
     field: string;
-  } | null;
+  }[];
   constraints: string; // 今の状況・制約（自由入力）
 }
 

@@ -86,8 +86,6 @@ function FieldWrapper({ label, required, optional, error, children, delay }: Fie
 export function BasicInfoForm() {
   const router = useRouter();
   const { dispatch } = useDiagnosis();
-  const [hasExperience, setHasExperience] = useState(false);
-
   // 生年月日の年・月・日を個別stateで管理
   const [birthYear, setBirthYear] = useState<number | ''>('');
   const [birthMonth, setBirthMonth] = useState<number | ''>('');
@@ -120,7 +118,7 @@ export function BasicInfoForm() {
       qualifications: [],
       currentOccupation: '',
       fieldOfStudy: '',
-      industryExperience: null,
+      industryExperience: [],
     },
   });
 
@@ -147,7 +145,7 @@ export function BasicInfoForm() {
       qualifications: typed.qualifications ?? [],
       currentOccupation: typed.currentOccupation ?? '',
       fieldOfStudy: typed.fieldOfStudy ?? '',
-      industryExperience: hasExperience ? (typed.industryExperience ?? null) : null,
+      industryExperience: typed.industryExperience ?? [],
       constraints: typed.constraints ?? '',
     };
     dispatch({ type: 'SET_BASIC_INFO', payload: basicInfo });
@@ -343,7 +341,7 @@ export function BasicInfoForm() {
         />
       </FieldWrapper>
 
-      {/* 業界経験 */}
+      {/* 業界経験（複数入力可） */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -358,52 +356,53 @@ export function BasicInfoForm() {
           <button
             type="button"
             onClick={() => {
-              setHasExperience(!hasExperience);
-              if (!hasExperience) {
-                setValue('industryExperience', { years: 1, field: '' });
-              } else {
-                setValue('industryExperience', null);
-              }
+              const current = watch('industryExperience') ?? [];
+              setValue('industryExperience', [...current, { years: 1, field: '' }]);
             }}
-            className={`ml-auto px-4 py-1.5 rounded-full text-xs border transition-all ${
-              hasExperience
-                ? 'bg-gold-500/20 border-gold-400/60 text-gold-300'
-                : 'bg-oracle-800/50 border-oracle-600/40 text-divine-300/60 hover:border-oracle-400/60'
-            }`}
+            className="ml-auto px-4 py-1.5 rounded-full text-xs border transition-all bg-oracle-800/50 border-oracle-600/40 text-divine-300/60 hover:border-oracle-400/60"
           >
-            {hasExperience ? '入力する ✓' : '+ 経験を追加'}
+            + 経験を追加
           </button>
         </div>
 
-        {hasExperience && (
+        {(watch('industryExperience') ?? []).map((_, idx) => (
           <motion.div
+            key={idx}
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="grid grid-cols-3 gap-3"
+            className="flex gap-3 items-center"
           >
-            <div className="col-span-1">
+            <div className="w-24 shrink-0">
               <select
-                {...register('industryExperience.years', { valueAsNumber: true })}
+                {...register(`industryExperience.${idx}.years`, { valueAsNumber: true })}
                 className="w-full px-3 py-3 rounded-xl bg-oracle-800/60 border border-oracle-600/50 text-divine-100 focus:outline-none focus:border-gold-500/70 transition-colors"
               >
                 {YEARS_OPTIONS.map((y) => (
-                  <option key={y} value={y}>
-                    {y}年
-                  </option>
+                  <option key={y} value={y}>{y}年</option>
                 ))}
               </select>
             </div>
-            <div className="col-span-2">
+            <div className="flex-1">
               <input
                 type="text"
-                {...register('industryExperience.field')}
+                {...register(`industryExperience.${idx}.field`)}
                 placeholder="例: IT・Webサービス、医療・製薬..."
                 className="w-full px-4 py-3 rounded-xl bg-oracle-800/60 border border-oracle-600/50 text-divine-100 placeholder:text-divine-300/40 focus:outline-none focus:border-gold-500/70 transition-colors"
               />
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                const current = watch('industryExperience') ?? [];
+                setValue('industryExperience', current.filter((_, i) => i !== idx));
+              }}
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border border-oracle-600/40 text-divine-300/50 hover:text-red-400 hover:border-red-400/40 transition-colors"
+              aria-label="この経験を削除"
+            >
+              ×
+            </button>
           </motion.div>
-        )}
+        ))}
       </motion.div>
 
       {/* 送信ボタン */}

@@ -7,10 +7,12 @@ const BasicInfoSchema = z.object({
   qualifications: z.array(z.string()),
   currentOccupation: z.string(),
   fieldOfStudy: z.string(),
-  industryExperience: z.object({
-    years: z.number().int().min(0).max(60),
-    field: z.string(),
-  }).nullable(),
+  industryExperience: z.array(
+    z.object({
+      years: z.number().int().min(0).max(60),
+      field: z.string(),
+    })
+  ).optional().default([]),
   constraints: z.string().max(800).optional().default(''),
 });
 
