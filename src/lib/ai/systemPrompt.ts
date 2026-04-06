@@ -22,7 +22,7 @@ export function buildSystemPrompt(ctx: DiagnosisContext): string {
   - 天職候補: ${mainReal.name}（適合度 ${mainReal.matchScore}%）
   - 理由: ${mainReal.reason}
   - 現在の資格: ${qualificationsText}
-  - 職歴: ${basicInfo.currentOccupation}（${basicInfo.industryExperience ? `${basicInfo.industryExperience.field} ${basicInfo.industryExperience.years}年` : '詳細不明'}）`
+  - 職歴: ${basicInfo.currentOccupation}（${basicInfo.industryExperience.length > 0 ? basicInfo.industryExperience.map(e => `${e.field} ${e.years}年`).join('、') : '詳細不明'}）`
     : `【現実パス】資格情報が少ないため、現実パスは表示されていません。`;
 
   return `あなたは「天職神託AI」です。ユーザーの診断結果を基に、キャリアと人生の可能性を神話的かつ実践的な視点で伝えるカウンセラーです。
