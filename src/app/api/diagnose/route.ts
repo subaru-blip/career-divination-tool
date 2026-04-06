@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
     ...sanitizedBasicInfoRaw,
     gender: sanitizedBasicInfoRaw.gender ?? null,
     industryExperience: sanitizedBasicInfoRaw.industryExperience ?? null,
+    constraints: sanitizedBasicInfoRaw.constraints ?? '',
   } satisfies import('@/types/diagnosis').BasicInfo;
 
   const sanitizedFreeTexts = parsed.data.freeTexts.map((ft) => ({
@@ -72,12 +73,12 @@ export async function POST(request: NextRequest) {
 
     // 自由記述テキストの準備
     const freeTextSummary = sanitizedFreeTexts
-      .filter(ft => ft.text.trim() && ft.questionId !== 'ft_constraints')
+      .filter(ft => ft.text.trim())
       .map(ft => ft.text)
       .join('\n');
 
-    const constraintsText = sanitizedFreeTexts
-      .find(ft => ft.questionId === 'ft_constraints')?.text?.trim() ?? '';
+    // 制約テキストはbasicInfoから取得
+    const constraintsText = sanitizedBasicInfo.constraints?.trim() ?? '';
 
     // LLMで現実パスを生成（制約テキストがある場合）
     if (constraintsText) {

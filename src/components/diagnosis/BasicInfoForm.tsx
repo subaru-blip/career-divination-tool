@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useForm, Controller } from 'react-hook-form';
@@ -10,6 +10,15 @@ import { useDiagnosis } from '@/store/diagnosisStore';
 import { Button } from '@/components/ui/Button';
 import { QualificationSelect } from './QualificationSelect';
 import type { BasicInfo } from '@/types/diagnosis';
+
+// 年のリスト（現在年〜1940年）
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: currentYear - 1940 + 1 }, (_, i) => currentYear - i);
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
+
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
 
 // 現在の状況の選択肢
 const STATUS_OPTIONS: { value: BasicInfo['currentStatus']; label: string; icon: string }[] = [
@@ -79,6 +88,21 @@ export function BasicInfoForm() {
   const { dispatch } = useDiagnosis();
   const [hasExperience, setHasExperience] = useState(false);
 
+  // 生年月日の年・月・日を個別stateで管理
+  const [birthYear, setBirthYear] = useState<number | ''>('');
+  const [birthMonth, setBirthMonth] = useState<number | ''>('');
+  const [birthDay, setBirthDay] = useState<number | ''>('');
+
+  const daysInMonth = useMemo(() => {
+    if (birthYear === '' || birthMonth === '') return 31;
+    return getDaysInMonth(birthYear, birthMonth);
+  }, [birthYear, birthMonth]);
+
+  const DAYS = useMemo(() =>
+    Array.from({ length: daysInMonth }, (_, i) => i + 1),
+    [daysInMonth]
+  );
+
   const {
     register,
     handleSubmit,
@@ -103,6 +127,16 @@ export function BasicInfoForm() {
   const selectedGender = watch('gender');
   const selectedStatus = watch('currentStatus');
 
+  // 年・月・日が揃ったら birthDate を更新
+  function updateBirthDate(y: number | '', m: number | '', d: number | '') {
+    if (y !== '' && m !== '' && d !== '') {
+      const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      setValue('birthDate', dateStr, { shouldValidate: true });
+    } else {
+      setValue('birthDate', '', { shouldValidate: false });
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onSubmit = (data: any) => {
     const typed = data as BasicInfoFormValues;
@@ -114,6 +148,7 @@ export function BasicInfoForm() {
       currentOccupation: typed.currentOccupation ?? '',
       fieldOfStudy: typed.fieldOfStudy ?? '',
       industryExperience: hasExperience ? (typed.industryExperience ?? null) : null,
+      constraints: typed.constraints ?? '',
     };
     dispatch({ type: 'SET_BASIC_INFO', payload: basicInfo });
     router.push('/diagnosis/questions');
@@ -128,14 +163,64 @@ export function BasicInfoForm() {
         error={errors.birthDate?.message}
         delay={0}
       >
-        <input
-          type="date"
-          {...register('birthDate')}
-          max={new Date().toISOString().split('T')[0]}
-          min="1920-01-01"
-          className="w-full px-4 py-3 rounded-xl bg-oracle-800/60 border border-oracle-600/50 text-divine-100 focus:outline-none focus:border-gold-500/70 focus:ring-1 focus:ring-gold-500/30 transition-colors"
-          aria-invalid={!!errors.birthDate}
-        />
+        {/* hidden field for react-hook-form */}
+        <input type="hidden" {...register('birthDate')} />
+        <div className="grid grid-cols-3 gap-3">
+          <select
+            value={birthYear}
+            onChange={(e) => {
+              const y = e.target.value ? Number(e.target.value) : '' as const;
+              setBirthYear(y);
+              // 日が月の最大日数を超える場合はリセット
+              if (y !== '' && birthMonth !== '' && birthDay !== '') {
+                const maxDay = getDaysInMonth(y as number, birthMonth as number);
+                if ((birthDay as number) > maxDay) setBirthDay('');
+              }
+              updateBirthDate(y, birthMonth, birthDay);
+            }}
+            className="w-full px-3 py-3 rounded-xl bg-oracle-800/60 border border-oracle-600/50 text-divine-100 focus:outline-none focus:border-gold-500/70 focus:ring-1 focus:ring-gold-500/30 transition-colors"
+            aria-label="生年"
+          >
+            <option value="">年</option>
+            {YEARS.map((y) => (
+              <option key={y} value={y}>{y}年</option>
+            ))}
+          </select>
+          <select
+            value={birthMonth}
+            onChange={(e) => {
+              const m = e.target.value ? Number(e.target.value) : '' as const;
+              setBirthMonth(m);
+              if (birthYear !== '' && m !== '' && birthDay !== '') {
+                const maxDay = getDaysInMonth(birthYear as number, m as number);
+                if ((birthDay as number) > maxDay) setBirthDay('');
+              }
+              updateBirthDate(birthYear, m, birthDay);
+            }}
+            className="w-full px-3 py-3 rounded-xl bg-oracle-800/60 border border-oracle-600/50 text-divine-100 focus:outline-none focus:border-gold-500/70 focus:ring-1 focus:ring-gold-500/30 transition-colors"
+            aria-label="生月"
+          >
+            <option value="">月</option>
+            {MONTHS.map((m) => (
+              <option key={m} value={m}>{m}月</option>
+            ))}
+          </select>
+          <select
+            value={birthDay}
+            onChange={(e) => {
+              const d = e.target.value ? Number(e.target.value) : '' as const;
+              setBirthDay(d);
+              updateBirthDate(birthYear, birthMonth, d);
+            }}
+            className="w-full px-3 py-3 rounded-xl bg-oracle-800/60 border border-oracle-600/50 text-divine-100 focus:outline-none focus:border-gold-500/70 focus:ring-1 focus:ring-gold-500/30 transition-colors"
+            aria-label="生日"
+          >
+            <option value="">日</option>
+            {DAYS.map((d) => (
+              <option key={d} value={d}>{d}日</option>
+            ))}
+          </select>
+        </div>
       </FieldWrapper>
 
       {/* 性別 */}
@@ -212,11 +297,29 @@ export function BasicInfoForm() {
         />
       </FieldWrapper>
 
+      {/* 今の状況・制約 */}
+      <FieldWrapper
+        label="今の状況を教えてください"
+        optional
+        delay={0.24}
+      >
+        <textarea
+          {...register('constraints')}
+          rows={4}
+          maxLength={800}
+          placeholder={'家族の状況、お金のこと、住んでいる場所、今すぐ働く必要があるか…\n転職・就職を考える上での「今の現実」を自由に書いてください。\n\n例：「子どもが2人いて、貯金に余裕がない。地方在住で引越しは難しい。すぐに収入が必要。」'}
+          className="w-full px-4 py-3 rounded-xl bg-oracle-800/60 border border-oracle-600/50 text-divine-100 placeholder:text-divine-300/40 focus:outline-none focus:border-gold-500/70 focus:ring-1 focus:ring-gold-500/30 transition-colors resize-none leading-relaxed"
+        />
+        <p className="text-xs text-divine-300/40">
+          ここに書いた内容をもとに、AIがあなたの状況に合った「現実パス」を提案します。書かなくても診断は可能です。
+        </p>
+      </FieldWrapper>
+
       {/* 現在の職業または専攻分野 */}
       <FieldWrapper
         label="現在の職業または専攻分野"
         optional
-        delay={0.24}
+        delay={0.30}
       >
         <input
           type="text"
@@ -230,7 +333,7 @@ export function BasicInfoForm() {
       <FieldWrapper
         label="学部・専攻（学生の方）"
         optional
-        delay={0.30}
+        delay={0.36}
       >
         <input
           type="text"
@@ -244,7 +347,7 @@ export function BasicInfoForm() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.36, ease: 'easeOut' as const }}
+        transition={{ duration: 0.5, delay: 0.42, ease: 'easeOut' as const }}
         className="space-y-3"
       >
         <div className="flex items-center gap-3">
@@ -307,7 +410,7 @@ export function BasicInfoForm() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.42, ease: 'easeOut' as const }}
+        transition={{ duration: 0.5, delay: 0.48, ease: 'easeOut' as const }}
         className="pt-4"
       >
         <Button

@@ -11,6 +11,7 @@ const BasicInfoSchema = z.object({
     years: z.number().int().min(0).max(60),
     field: z.string(),
   }).nullable(),
+  constraints: z.string().max(800).optional().default(''),
 });
 
 const QuestionAnswerSchema = z.object({

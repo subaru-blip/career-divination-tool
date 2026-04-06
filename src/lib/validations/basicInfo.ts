@@ -35,6 +35,8 @@ export const basicInfoSchema = z.object({
     })
     .nullable()
     .optional(),
+
+  constraints: z.string().max(800).optional().default(''),
 });
 
 export type BasicInfoFormValues = z.infer<typeof basicInfoSchema>;

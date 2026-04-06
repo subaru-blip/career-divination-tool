@@ -11,6 +11,7 @@ export interface BasicInfo {
     years: number;
     field: string;
   } | null;
+  constraints: string; // 今の状況・制約（自由入力）
 }
 
 export interface DiagnosisSession {

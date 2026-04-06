@@ -35,7 +35,7 @@ export function RealPathSection({ path, accentColor = '#4c63d2' }: RealPathSecti
       </div>
 
       <p className="text-center text-sm text-divine-200/60">
-        あなたの資格・経験から今すぐ歩める道
+        あなたの今の状況・制約を踏まえて、現実的に歩める道
       </p>
 
       <div className="space-y-3">

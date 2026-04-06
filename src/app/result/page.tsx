@@ -81,19 +81,35 @@ export default function ResultPage() {
             <DivineMessage message={result.divineMessage} />
           </div>
 
-          {/* 現実パス（資格あり時のみ） */}
-          {result.realPath && (
-            <RealPathSection
-              path={result.realPath}
-              accentColor={archetype.colorPalette.secondary}
-            />
-          )}
-
-          {/* 理想パス */}
+          {/* 理想パス（常に表示） */}
           <IdealPathSection
             path={result.idealPath}
             accentColor={archetype.colorPalette.primary}
           />
+
+          {/* 現実パス（制約・資格入力時） */}
+          {result.realPath && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="text-center space-y-2"
+              >
+                <p className="text-xs tracking-widest uppercase text-oracle-400">
+                  ── 一方で ──
+                </p>
+                <p className="text-sm text-divine-200/70 leading-relaxed max-w-md mx-auto">
+                  あなたが教えてくれた今の状況をAIが分析し、<br />
+                  <span className="text-gold-400">今すぐ現実的に目指せる道</span>を導き出しました
+                </p>
+              </motion.div>
+              <RealPathSection
+                path={result.realPath}
+                accentColor={archetype.colorPalette.secondary}
+              />
+            </>
+          )}
 
           {/* CTA */}
           <motion.div

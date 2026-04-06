@@ -87,5 +87,6 @@ export function sanitizeBasicInfo(info: BasicInfoFormValues): BasicInfoFormValue
           field: sanitizeText(info.industryExperience.field, 100),
         }
       : info.industryExperience,
+    constraints: sanitizeText(info.constraints ?? '', 800),
   };
 }
