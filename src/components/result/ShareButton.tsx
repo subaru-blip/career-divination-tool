@@ -19,7 +19,7 @@ export function ShareButton({
 }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
-  const shareText = `私の天職は「${occupationName}」でした！アーキタイプは「${archetypeName}」✦ #天職神託`;
+  const shareText = `私の天職は「${occupationName}」でした！\nアーキタイプは「${archetypeName}」\n\n#天職神託`;
 
   const getShareUrl = useCallback(() => {
     if (typeof window === 'undefined') return '';
@@ -27,79 +27,55 @@ export function ShareButton({
     if (resultId) {
       return `${base}/result/${resultId}`;
     }
-    // resultId がない場合: 結果データをBase64エンコードしてURLに埋め込む
-    const payload = JSON.stringify({
+    // 短いパラメータでURLを構築（Base64は長すぎて壊れるので廃止）
+    const params = new URLSearchParams({
       a: archetypeId,
       o: occupationName,
-      m: divineMessage.slice(0, 100),
     });
-    const encoded = btoa(encodeURIComponent(payload));
-    return `${base}/result/${encoded}`;
-  }, [archetypeId, occupationName, divineMessage, resultId]);
+    return `${base}/result/share?${params.toString()}`;
+  }, [archetypeId, occupationName, resultId]);
 
-  const getOgImageUrl = useCallback(() => {
-    if (typeof window === 'undefined') return '';
-    const base = window.location.origin;
-    const params = new URLSearchParams({
-      archetype: archetypeName,
-      occupation: occupationName,
-      message: divineMessage.slice(0, 50),
-    });
-    return `${base}/api/og?${params.toString()}`;
-  }, [archetypeName, occupationName, divineMessage]);
-
-  const handleNativeShare = useCallback(async () => {
+  const handleCopyLink = useCallback(async () => {
     const url = getShareUrl();
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `天職神託 - ${archetypeName}`,
-          text: shareText,
-          url,
-        });
-      } catch (err) {
-        // AbortError はユーザーがキャンセルした場合なので無視
-        if (err instanceof Error && err.name !== 'AbortError') {
-          console.error('Share failed:', err);
-        }
-      }
-    } else {
-      // フォールバック: クリップボードコピー
-      try {
-        await navigator.clipboard.writeText(`${shareText}\n${url}`);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch {
-        // clipboard APIが使えない環境の最終手段
-        const textArea = document.createElement('textarea');
-        textArea.value = `${shareText}\n${url}`;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
+    const fullText = `${shareText}\n${url}`;
+    try {
+      await navigator.clipboard.writeText(fullText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // clipboard APIが使えない環境
+      const textArea = document.createElement('textarea');
+      textArea.value = fullText;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     }
-  }, [archetypeName, shareText, getShareUrl]);
+  }, [shareText, getShareUrl]);
 
   const handleXShare = useCallback(() => {
     const url = getShareUrl();
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`;
-    window.open(tweetUrl, '_blank', 'noopener,noreferrer');
-  }, [shareText, getShareUrl]);
+    const text = `私の天職は「${occupationName}」でした！アーキタイプは「${archetypeName}」✦ #天職神託`;
+    const tweetUrl = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(tweetUrl, '_blank', 'noopener,noreferrer,width=550,height=420');
+  }, [archetypeName, occupationName, getShareUrl]);
 
   const handleLineShare = useCallback(() => {
     const url = getShareUrl();
-    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}&text=${encodeURIComponent(shareText)}`;
+    const text = `私の天職は「${occupationName}」でした！アーキタイプは「${archetypeName}」✦\n${url}`;
+    const lineUrl = `https://line.me/R/share?text=${encodeURIComponent(text)}`;
     window.open(lineUrl, '_blank', 'noopener,noreferrer');
-  }, [shareText, getShareUrl]);
+  }, [archetypeName, occupationName, getShareUrl]);
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
-      {/* メイン共有ボタン */}
+      {/* リンクコピーボタン */}
       <button
-        onClick={handleNativeShare}
+        onClick={handleCopyLink}
         className="
           inline-flex items-center justify-center gap-2
           rounded-xl
@@ -112,11 +88,11 @@ export function ShareButton({
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 focus-visible:ring-offset-oracle-950
           active:scale-95
         "
-        aria-label="結果をSNSでシェア"
+        aria-label="結果をリンクでコピー"
       >
         <span aria-hidden="true">✦</span>
         <span>
-          {copied ? 'コピーしました！' : '結果をシェア'}
+          {copied ? 'コピーしました！' : 'リンクをコピー'}
         </span>
         <span aria-hidden="true">{copied ? '✓' : '🔗'}</span>
       </button>
